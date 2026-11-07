@@ -9,7 +9,7 @@ const app = express();
 const PORT = Number(process.env.PORT || 3000);
 const HOST = "0.0.0.0";
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "*";
-const ALLOWED_HOSTS = (process.env.ALLOWED_HOSTS || "example.com,www.example.com")
+const ALLOWED_HOSTS = (process.env.ALLOWED_HOSTS || "example.com,www.example.com,poki.com,https://poki.com")
   .split(",").map(x => x.trim().toLowerCase()).filter(Boolean);
 
 app.disable("x-powered-by");
