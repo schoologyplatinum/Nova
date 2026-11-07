@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nova Proxy — Web Viewer</title>
+<style>
+:root{color-scheme:dark;--bg:#090b14;--panel:#121626;--line:#252c43;--muted:#9aa4bd;--accent:#8b7cff}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% -15%,#29245c 0,transparent 45%),var(--bg);font:15px/1.5 Inter,ui-sans-serif,system-ui;color:#f6f7ff}
+.shell{width:min(1050px,calc(100% - 32px));margin:0 auto;padding:54px 0 36px}.brand{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:34px}
+.logo{width:45px;height:45px;border-radius:15px;background:linear-gradient(135deg,#a394ff,#5c50d9);display:grid;place-items:center;font-size:23px;box-shadow:0 8px 35px #7866ff55}
+h1{font-size:26px;letter-spacing:-.7px;margin:0}.tag{color:var(--muted);font-size:13px}
+.card{background:linear-gradient(145deg,#171c2eeb,#101423f2);border:1px solid var(--line);border-radius:22px;padding:22px;box-shadow:0 25px 80px #0005}
+.toolbar{display:flex;gap:9px;align-items:center;margin-bottom:14px}.tool{width:42px;height:42px;border:1px solid var(--line);background:#1a2032;color:#dce1f5;border-radius:12px;font-size:18px;cursor:pointer}.tool:hover{background:#292f48}
+.address{display:flex;gap:10px;flex:1}.address input{width:100%;min-width:0;background:#0b0f1c;border:1px solid #303852;color:white;border-radius:12px;padding:0 15px;height:46px;outline:none;font-size:14px}.address input:focus{border-color:var(--accent);box-shadow:0 0 0 3px #8b7cff22}
+.go{border:0;border-radius:12px;padding:0 22px;background:linear-gradient(135deg,#9587ff,#6557e8);color:white;font-weight:700;cursor:pointer}.go:hover{filter:brightness(1.1)}
+.status{display:flex;align-items:center;justify-content:space-between;color:var(--muted);font-size:12px;padding:2px 3px 14px}.dot{display:inline-block;width:7px;height:7px;background:#56d6a0;border-radius:50%;margin-right:7px}
+.viewer{height:min(65vh,650px);min-height:350px;border:1px solid var(--line);border-radius:14px;background:#0b0e18;overflow:hidden;display:grid;place-items:center}
+.welcome{text-align:center;padding:30px;max-width:500px}.globe{font-size:44px;margin-bottom:10px}.welcome h2{font-size:20px;margin:0 0 8px}.welcome p{color:var(--muted);margin:0}
+iframe{width:100%;height:100%;border:0;background:white;display:none}
+.below{display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin:16px 4px 0}
+.notice{margin-top:18px;border:1px solid #4c4224;background:#282316;color:#e7d6a6;border-radius:12px;padding:12px 14px;font-size:12px}
+@media(max-width:650px){.shell{padding-top:30px}.card{padding:13px}.toolbar{flex-wrap:wrap}.address{order:1;flex-basis:100%}.go{height:46px}.tool{flex:1}.viewer{min-height:420px}}
+</style></head>
+<body><main class="shell">
+  <header class="brand"><div class="logo">✦</div><div><h1>Nova Proxy</h1><div class="tag">A simple, private web page viewer</div></div></header>
+  <section class="card">
+    <form id="navForm" class="toolbar">
+      <button class="tool" type="button" id="back" title="Back">←</button>
+      <button class="tool" type="button" id="forward" title="Forward">→</button>
+      <button class="tool" type="button" id="reload" title="Reload">↻</button>
+      <div class="address"><input id="url" type="text" autocomplete="url" spellcheck="false" placeholder="Enter a website address (e.g. https://example.com)"><button class="go" type="submit">Go</button></div>
+    </form>
+    <div class="status"><span><i class="dot"></i><span id="status">Ready to browse</span></span><span id="domainInfo">Checking server…</span></div>
+    <div class="viewer">
+      <div class="welcome" id="welcome"><div class="globe">🌐</div><h2>Where would you like to go?</h2><p>Enter a website above to view its page through your Node.js server.</p></div>
+      <iframe id="page" title="Proxied website" referrerpolicy="no-referrer"></iframe>
+    </div>
+    <div class="below"><span>Nova Proxy · Safe viewer mode</span><span>Navigation history is kept in this tab only</span></div>
+    <div class="notice">This is a restricted HTML page viewer, not a full CroxyProxy replacement. For safety, the server only loads domains you add to its allowlist. Page scripts, forms, logins, and interactive web apps are disabled.</div>
+  </section>
+</main>
+<script>
+const form=document.getElementById('navForm'), input=document.getElementById('url'), frame=document.getElementById('page');
+const welcome=document.getElementById('welcome'), statusEl=document.getElementById('status'), domainInfo=document.getElementById('domainInfo');
+let historyList=[], index=-1, currentUrl='';
+function show(url, add=true){
+  let parsed;
+  try { parsed=new URL(/^https?:\\/\\//i.test(url)?url:'https://'+url); }
+  catch { statusEl.textContent='Please enter a valid website address'; return; }
+  if(!['http:','https:'].includes(parsed.protocol)){statusEl.textContent='Only HTTP and HTTPS are supported';return;}
+  const clean=parsed.toString();
+  if(add){historyList=historyList.slice(0,index+1);historyList.push(clean);index++;}
+  currentUrl=clean; input.value=clean; statusEl.textContent='Loading '+parsed.hostname+'…';
+  welcome.style.display='none';frame.style.display='block';
+  frame.src='/browse?url='+encodeURIComponent(clean);
+}
+form.addEventListener('submit',e=>{e.preventDefault();show(input.value)});
+document.getElementById('back').onclick=()=>{if(index>0){index--;show(historyList[index],false)}};
+document.getElementById('forward').onclick=()=>{if(index<historyList.length-1){index++;show(historyList[index],false)}};
+document.getElementById('reload').onclick=()=>{if(currentUrl)show(currentUrl,false)};
+frame.addEventListener('load',()=>{if(currentUrl)statusEl.textContent='Page loaded';});
+fetch('/api/config').then(r=>r.json()).then(c=>{
+  domainInfo.textContent='Allowed: '+(c.allowedHosts.join(', ')||'none');
+}).catch(()=>domainInfo.textContent='Server configuration unavailable');
+</script></body></html>
